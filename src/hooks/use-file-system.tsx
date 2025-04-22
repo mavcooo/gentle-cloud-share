@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
 export type FileItem = {
   id: string;
@@ -27,47 +28,47 @@ export const useFileSystem = (path = '') => {
 
   const loadFiles = async () => {
     if (!user) return;
-    
+
     setLoading(true);
     try {
       // Carica cartelle (sono memorizzate in una tabella separata)
       const { data: folderData, error: folderError } = await supabase
-        .from('folders')
+        .from('folders' as const)
         .select('*')
         .eq('user_id', user.id)
         .eq('parent_path', path || null);
-        
+
       if (folderError) throw folderError;
-      
+
       // Carica file
       const { data: fileData, error: fileError } = await supabase
         .storage
         .from('user_files')
         .list(basePath);
-        
+
       if (fileError) throw fileError;
 
       // Carica informazioni sull'utilizzo dello storage
       const { data: storageData, error: storageError } = await supabase
-        .from('user_storage')
+        .from('user_storage' as const)
         .select('storage_used, storage_limit')
         .eq('user_id', user.id)
-        .single();
-        
+        .maybeSingle();
+
       if (storageError && storageError.code !== 'PGRST116') throw storageError;
-      
+
       // Mappa le cartelle al formato FileItem
-      const mappedFolders = (folderData || []).map((folder): FileItem => ({
+      const mappedFolders = (folderData || []).map((folder: Database['public']['Tables']['folders']['Row']): FileItem => ({
         id: folder.id,
         name: folder.name,
         type: 'folder',
         modified: new Date(folder.created_at).toLocaleString(),
         path: folder.path
       }));
-      
+
       // Mappa i file al formato FileItem
       const mappedFiles = (fileData || [])
-        .filter(file => !file.name.endsWith('/')) // Escludi le cartelle
+        .filter((file) => !file.name.endsWith('/')) // Escludi le cartelle
         .map((file): FileItem => {
           const fileType = getFileType(file.name);
           return {
@@ -80,7 +81,7 @@ export const useFileSystem = (path = '') => {
             url: getFileUrl(basePath, file.name)
           };
         });
-      
+
       setFolders(mappedFolders);
       setFiles(mappedFiles);
       setStorageUsed(storageData?.storage_used || 0);
@@ -99,13 +100,13 @@ export const useFileSystem = (path = '') => {
 
   const createFolder = async (folderName: string) => {
     if (!user) return null;
-    
+
     try {
       // Crea la nuova cartella nel database
       const newPath = path ? `${path}/${folderName}` : folderName;
-      
+
       const { data, error } = await supabase
-        .from('folders')
+        .from('folders' as const)
         .insert({
           name: folderName,
           path: newPath,
@@ -114,22 +115,22 @@ export const useFileSystem = (path = '') => {
         })
         .select()
         .single();
-        
+
       if (error) throw error;
-      
+
       // Crea anche una cartella vuota nello storage
       const { error: storageError } = await supabase
         .storage
         .from('user_files')
         .upload(`${user.id}/${newPath}/.folder`, new Blob(['']));
-        
+
       if (storageError) throw storageError;
-      
+
       toast({
         title: 'Successo',
         description: 'Cartella creata con successo.',
       });
-      
+
       await loadFiles();
       return data;
     } catch (error) {
@@ -145,7 +146,7 @@ export const useFileSystem = (path = '') => {
 
   const uploadFiles = async (files: File[]) => {
     if (!user) return;
-    
+
     // Verifica spazio disponibile
     const totalSize = files.reduce((acc, file) => acc + file.size, 0);
     if (storageUsed + totalSize > storageLimit) {
@@ -156,7 +157,7 @@ export const useFileSystem = (path = '') => {
       });
       return;
     }
-    
+
     const uploadPromises = files.map(async (file) => {
       try {
         const filePath = path ? `${path}/${file.name}` : file.name;
@@ -164,36 +165,36 @@ export const useFileSystem = (path = '') => {
           .storage
           .from('user_files')
           .upload(`${user.id}/${filePath}`, file);
-          
+
         if (error) throw error;
-        
+
         // Aggiorna lo spazio utilizzato
         await supabase.rpc('increment_storage_used', {
           user_id_param: user.id,
           bytes_used: file.size
         });
-        
+
         return { success: true, name: file.name };
       } catch (error) {
         console.error(`Errore upload file ${file.name}:`, error);
         return { success: false, name: file.name, error };
       }
     });
-    
+
     const results = await Promise.all(uploadPromises);
     const successes = results.filter(r => r.success);
     const failures = results.filter(r => !r.success);
-    
+
     if (successes.length > 0) {
       toast({
         title: 'Upload completato',
         description: `${successes.length} file caricati con successo.`,
       });
-      
+
       // Ricarica la lista dei file
       await loadFiles();
     }
-    
+
     if (failures.length > 0) {
       toast({
         title: 'Errore upload',
@@ -205,38 +206,38 @@ export const useFileSystem = (path = '') => {
 
   const deleteFile = async (file: FileItem) => {
     if (!user) return;
-    
+
     try {
       if (file.type === 'folder') {
         // Elimina la cartella dal database
         const { error } = await supabase
-          .from('folders')
+          .from('folders' as const)
           .delete()
           .eq('id', file.id);
-          
+
         if (error) throw error;
-        
+
         // Elimina tutti i file nella cartella dallo storage
         // Nota: questo è un semplificato, un'implementazione reale dovrebbe gestire le sottocartelle in modo ricorsivo
         const { error: storageError } = await supabase
           .storage
           .from('user_files')
           .remove([`${user.id}/${file.path}/.folder`]);
-          
+
         if (storageError) throw storageError;
       } else {
         // Ottieni la dimensione del file prima di eliminarlo
         const filePath = file.path;
         if (!filePath) throw new Error('Percorso file mancante');
-        
+
         // Elimina il file
         const { error } = await supabase
           .storage
           .from('user_files')
           .remove([filePath]);
-          
+
         if (error) throw error;
-        
+
         // Aggiorna lo spazio utilizzato
         if (file.size) {
           await supabase.rpc('decrement_storage_used', {
@@ -245,12 +246,12 @@ export const useFileSystem = (path = '') => {
           });
         }
       }
-      
+
       toast({
         title: 'Eliminato',
         description: `${file.name} è stato eliminato.`,
       });
-      
+
       await loadFiles();
     } catch (error) {
       console.error('Errore eliminazione:', error);
@@ -264,54 +265,54 @@ export const useFileSystem = (path = '') => {
 
   const renameFile = async (file: FileItem, newName: string) => {
     if (!user) return;
-    
+
     try {
       if (file.type === 'folder') {
         // Rinomina la cartella nel database
         const { error } = await supabase
-          .from('folders')
+          .from('folders' as const)
           .update({ name: newName })
           .eq('id', file.id);
-          
+
         if (error) throw error;
       } else {
         // Per i file, dobbiamo caricare una copia con il nuovo nome e poi eliminare l'originale
         const filePath = file.path;
         if (!filePath) throw new Error('Percorso file mancante');
-        
+
         // Ottieni il contenuto del file
         const { data, error } = await supabase
           .storage
           .from('user_files')
           .download(filePath);
-          
+
         if (error) throw error;
-        
+
         // Ottieni il percorso della directory
         const dirPath = path ? `${user.id}/${path}/` : `${user.id}/`;
-        
+
         // Carica il file con il nuovo nome
         const { error: uploadError } = await supabase
           .storage
           .from('user_files')
           .upload(`${dirPath}${newName}`, data);
-          
+
         if (uploadError) throw uploadError;
-        
+
         // Elimina il file originale
         const { error: deleteError } = await supabase
           .storage
           .from('user_files')
           .remove([filePath]);
-          
+
         if (deleteError) throw deleteError;
       }
-      
+
       toast({
         title: 'Rinominato',
         description: `File rinominato con successo.`,
       });
-      
+
       await loadFiles();
     } catch (error) {
       console.error('Errore rinomina:', error);
@@ -337,7 +338,7 @@ export const useFileSystem = (path = '') => {
   const getFileType = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (!ext) return 'other';
-    
+
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) {
       return 'image';
     } else if (ext === 'pdf') {
@@ -345,7 +346,7 @@ export const useFileSystem = (path = '') => {
     } else if (['doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx'].includes(ext)) {
       return 'document';
     }
-    
+
     return 'other';
   };
 
@@ -372,10 +373,10 @@ export const useFileSystem = (path = '') => {
 // Helper per formattare la dimensione dei file
 export const formatFileSize = (bytes?: number) => {
   if (bytes === undefined || bytes === 0) return '0 Bytes';
-  
+
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  
+
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };

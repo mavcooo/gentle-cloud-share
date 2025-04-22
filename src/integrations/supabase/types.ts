@@ -9,13 +9,94 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      folders: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          parent_path: string | null
+          path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          parent_path?: string | null
+          path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          parent_path?: string | null
+          path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_storage: {
+        Row: {
+          created_at: string
+          id: string
+          storage_limit: number
+          storage_used: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          storage_limit?: number
+          storage_used?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          storage_limit?: number
+          storage_used?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decrement_storage_used: {
+        Args: { user_id_param: string; bytes_used: number }
+        Returns: undefined
+      }
+      increment_storage_used: {
+        Args: { user_id_param: string; bytes_used: number }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

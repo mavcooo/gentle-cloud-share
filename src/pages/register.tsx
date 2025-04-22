@@ -10,6 +10,7 @@ import { Logo } from '@/components/logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import type { Database } from '@/integrations/supabase/types';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -29,7 +30,7 @@ const Register = () => {
       try {
         setConnectionStatus('connecting');
         // Esegui una query semplice per verificare la connessione
-        const { error } = await supabase.from('user_roles').select('count').limit(1);
+        const { error } = await supabase.from('user_roles' as const).select('id').limit(1);
         if (error && error.code !== 'PGRST116') { // PGRST116 è "relation does not exist" che è ok se la tabella non esiste ancora
           console.error('Errore di connessione a Supabase:', error);
           setConnectionStatus('error');
@@ -41,7 +42,7 @@ const Register = () => {
         setConnectionStatus('error');
       }
     };
-    
+
     checkConnection();
   }, []);
 
@@ -55,7 +56,7 @@ const Register = () => {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     // Validazione client-side
     if (!name || !email || !password || !confirmPassword) {
       toast({
@@ -66,7 +67,7 @@ const Register = () => {
       setIsLoading(false);
       return;
     }
-    
+
     if (password !== confirmPassword) {
       toast({
         title: "Le password non corrispondono",
@@ -76,7 +77,7 @@ const Register = () => {
       setIsLoading(false);
       return;
     }
-    
+
     if (password.length < 8) {
       toast({
         title: "Password troppo corta",
@@ -86,11 +87,11 @@ const Register = () => {
       setIsLoading(false);
       return;
     }
-    
+
     try {
       const { error } = await signUp(email, password, name);
       if (error) throw error;
-      
+
       // La redirezione viene gestita da AuthContext se la registrazione è immediata,
       // altrimenti, mostriamo un messaggio di conferma
       setIsLoading(false);
@@ -110,7 +111,7 @@ const Register = () => {
         <div className="flex justify-center mb-8">
           <Logo size="lg" />
         </div>
-        
+
         {connectionStatus === 'error' && (
           <div className="mb-4 p-4 bg-amber-100 border border-amber-300 rounded-md text-amber-800">
             <h3 className="font-bold mb-2">Errore di connessione a Supabase</h3>
@@ -120,7 +121,7 @@ const Register = () => {
             </p>
           </div>
         )}
-        
+
         {connectionStatus === 'connecting' && (
           <div className="mb-4 p-4 bg-blue-100 border border-blue-300 rounded-md text-blue-800">
             <h3 className="font-bold mb-2">Connessione in corso...</h3>
@@ -129,7 +130,7 @@ const Register = () => {
             </p>
           </div>
         )}
-        
+
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl text-center">Crea un Account</CardTitle>

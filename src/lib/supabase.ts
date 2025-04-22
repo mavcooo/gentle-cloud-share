@@ -1,6 +1,6 @@
 
-import { createClient } from '@supabase/supabase-js';
 import { supabase as configuredClient } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 
 // Utilizziamo direttamente il client configurato dal file generato automaticamente
 export const supabase = configuredClient;
@@ -9,27 +9,27 @@ export const supabase = configuredClient;
 export const isAdmin = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  
+
   const { data } = await supabase
-    .from('user_roles')
+    .from('user_roles' as const)
     .select('role')
     .eq('user_id', user.id)
-    .single();
-  
-  return data?.role === 'admin';
+    .maybeSingle();
+
+  return !!data && data.role === 'admin';
 };
 
 // Helper per ottenere lo spazio utilizzato dall'utente
 export const getUserStorageUsed = async () => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return 0;
-  
+
   const { data } = await supabase
-    .from('user_storage')
+    .from('user_storage' as const)
     .select('storage_used')
     .eq('user_id', user.id)
     .maybeSingle();
-  
+
   return data?.storage_used || 0;
 };
 
@@ -37,14 +37,14 @@ export const getUserStorageUsed = async () => {
 export const hasEnoughStorage = async (fileSize: number) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
-  
+
   const { data } = await supabase
-    .from('user_storage')
+    .from('user_storage' as const)
     .select('storage_used, storage_limit')
     .eq('user_id', user.id)
     .maybeSingle();
-  
+
   if (!data) return false;
-  
   return (data.storage_used + fileSize) <= data.storage_limit;
 };
+

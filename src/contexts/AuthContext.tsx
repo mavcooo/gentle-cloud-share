@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { useToast } from '@/components/ui/use-toast';
+import type { Database } from '@/integrations/supabase/types';
 
 type AuthContextType = {
   session: Session | null;
@@ -47,12 +48,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (user) {
         try {
           const { data } = await supabase
-            .from('user_roles')
+            .from('user_roles' as const)
             .select('role')
             .eq('user_id', user.id)
             .maybeSingle();
-          
-          setIsAdmin(data?.role === 'admin');
+
+          setIsAdmin(!!data && data.role === 'admin');
         } catch (error) {
           console.error('Errore nel controllo del ruolo admin:', error);
           setIsAdmin(false);
