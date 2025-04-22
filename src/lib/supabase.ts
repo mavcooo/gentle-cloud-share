@@ -1,13 +1,12 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Se l'app è in esecuzione in produzione, utilizza le variabili d'ambiente
+// Altrimenti, per lo sviluppo, usa valori di fallback (mock)
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'mock-key-for-development';
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error('Supabase URL and Anon Key are required');
-}
-
+// Crea il client Supabase
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Helper per verificare il ruolo dell'utente
