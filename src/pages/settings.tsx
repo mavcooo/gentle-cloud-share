@@ -6,57 +6,81 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { Eye, EyeOff, User } from 'lucide-react';
 
 const SettingsPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
   const { toast } = useToast();
+  const { user, signOut } = useAuth();
   
-  const [profileForm, setProfileForm] = useState({
-    name: 'John Smith',
-    email: 'john.smith@example.com',
+  const [profile, setProfile] = useState({
+    name: user?.user_metadata?.name || '',
+    email: user?.email || '',
   });
   
-  const [preferences, setPreferences] = useState({
-    emailNotifications: true,
-    autoSaveFiles: true,
-    darkMode: false,
+  const [security, setSecurity] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
   
-  const [storagePlan, setStoragePlan] = useState('basic');
-  
-  const handleProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    toast({
-      title: 'Profile saved',
-      description: 'Your profile information has been updated.',
-    });
-  };
-  
-  const handlePreferenceChange = (key: keyof typeof preferences) => {
-    setPreferences({
-      ...preferences,
-      [key]: !preferences[key]
-    });
-    
-    toast({
-      title: 'Preference updated',
-      description: `${key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase())} has been ${preferences[key] ? 'disabled' : 'enabled'}.`,
-    });
-  };
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(true);
+  const [emailNotifications, setEmailNotifications] = useState(true);
   
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
+  };
+  
+  const handleProfileUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    toast({
+      title: 'Profilo aggiornato',
+      description: 'Le tue informazioni sono state aggiornate.',
+    });
+  };
+  
+  const handlePasswordUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validazione
+    if (security.newPassword !== security.confirmPassword) {
+      toast({
+        title: 'Errore',
+        description: 'Le password non corrispondono.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    toast({
+      title: 'Password aggiornata',
+      description: 'La tua password è stata modificata con successo.',
+    });
+    
+    // Reset form
+    setSecurity({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: '',
+    });
+  };
+  
+  const handleLogout = async () => {
+    await signOut();
   };
   
   return (
     <div className="min-h-screen flex bg-background">
       <Sidebar isMobile={isMobile} isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
       
-      <main className="flex-1 p-4 md:p-6 max-w-screen overflow-auto">
+      <main className={`flex-1 p-4 md:p-6 transition-all overflow-hidden ${isMobile ? 'ml-0' : ''}`}>
         {isMobile && !sidebarOpen && (
           <Button 
             variant="ghost" 
@@ -71,231 +95,206 @@ const SettingsPage = () => {
         )}
         
         <div className="mb-6">
-          <h1 className="text-3xl font-bold">Settings</h1>
-          <p className="text-muted-foreground">Manage your account and preferences</p>
+          <h1 className="text-3xl font-bold">Impostazioni</h1>
+          <p className="text-muted-foreground">Gestisci il tuo account e le preferenze</p>
         </div>
         
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Profile Information</CardTitle>
-              <CardDescription>
-                Update your personal details
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleProfileSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input 
-                    id="name" 
-                    value={profileForm.name}
-                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  />
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input 
-                    id="email" 
-                    type="email"
-                    value={profileForm.email}
-                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
-                  />
-                </div>
-                
-                <Button type="submit">Save Changes</Button>
-              </form>
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="profile" className="space-y-6">
+          <TabsList className="grid w-full max-w-md grid-cols-3">
+            <TabsTrigger value="profile">Profilo</TabsTrigger>
+            <TabsTrigger value="security">Sicurezza</TabsTrigger>
+            <TabsTrigger value="preferences">Preferenze</TabsTrigger>
+          </TabsList>
           
-          <Card>
-            <CardHeader>
-              <CardTitle>Preferences</CardTitle>
-              <CardDescription>
-                Customize your file storage experience
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="email-notifications">Email Notifications</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Receive notifications about file activity
-                  </p>
-                </div>
-                <Switch 
-                  id="email-notifications"
-                  checked={preferences.emailNotifications}
-                  onCheckedChange={() => handlePreferenceChange('emailNotifications')}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="auto-save">Auto-Save Files</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Automatically save edited files
-                  </p>
-                </div>
-                <Switch 
-                  id="auto-save"
-                  checked={preferences.autoSaveFiles}
-                  onCheckedChange={() => handlePreferenceChange('autoSaveFiles')}
-                />
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="dark-mode">Dark Mode</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Switch to dark theme
-                  </p>
-                </div>
-                <Switch 
-                  id="dark-mode"
-                  checked={preferences.darkMode}
-                  onCheckedChange={() => handlePreferenceChange('darkMode')}
-                />
-              </div>
-            </CardContent>
-          </Card>
+          {/* Profilo Tab */}
+          <TabsContent value="profile">
+            <Card>
+              <CardHeader>
+                <CardTitle>Informazioni Profilo</CardTitle>
+                <CardDescription>
+                  Aggiorna le tue informazioni personali
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleProfileUpdate} className="space-y-4">
+                  <div className="flex items-center justify-center mb-6">
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full bg-family-lightBlue flex items-center justify-center">
+                        <User size={40} className="text-primary" />
+                      </div>
+                      <Button size="sm" className="absolute bottom-0 right-0 rounded-full" variant="secondary">
+                        Cambia
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Nome completo</Label>
+                    <Input 
+                      id="name" 
+                      value={profile.name}
+                      onChange={(e) => setProfile({...profile, name: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input 
+                      id="email" 
+                      type="email"
+                      value={profile.email}
+                      onChange={(e) => setProfile({...profile, email: e.target.value})}
+                      disabled
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      L'email non può essere modificata
+                    </p>
+                  </div>
+                  
+                  <div className="pt-4 flex justify-end">
+                    <Button type="submit">Salva modifiche</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
           
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Storage Plan</CardTitle>
-              <CardDescription>
-                Manage your storage capacity
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4 md:grid-cols-3">
-                <div 
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${storagePlan === 'basic' ? 'border-primary bg-primary/5' : ''}`}
-                  onClick={() => setStoragePlan('basic')}
-                >
-                  <div className="font-semibold mb-1">Basic</div>
-                  <div className="text-2xl font-bold mb-2">100GB</div>
-                  <div className="text-sm text-muted-foreground mb-4">Free forever</div>
-                  <ul className="text-sm space-y-2">
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      100GB storage
-                    </li>
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      File sharing
-                    </li>
-                    <li className="flex items-center text-muted-foreground">
-                      <svg className="mr-2" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68682L4.03164 3.2184C3.80708 2.99385 3.44301 2.99385 3.21846 3.2184C2.99391 3.44295 2.99391 3.80702 3.21846 4.03157L6.68688 7.49999L3.21846 10.9684C2.99391 11.193 2.99391 11.557 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31316L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.557 12.0062 11.193 11.7816 10.9684L8.31322 7.49999L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-                      </svg>
-                      Advanced features
-                    </li>
-                  </ul>
-                  <Button variant="outline" className="w-full mt-4">Current Plan</Button>
+          {/* Sicurezza Tab */}
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>Sicurezza</CardTitle>
+                <CardDescription>
+                  Gestisci la tua password e le impostazioni di sicurezza
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handlePasswordUpdate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Password attuale</Label>
+                    <div className="relative">
+                      <Input 
+                        id="currentPassword" 
+                        type={showPassword ? "text" : "password"}
+                        value={security.currentPassword}
+                        onChange={(e) => setSecurity({...security, currentPassword: e.target.value})}
+                      />
+                      <Button 
+                        type="button"
+                        variant="ghost" 
+                        size="icon"
+                        className="absolute right-0 top-0 h-full px-3"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Nuova password</Label>
+                    <Input 
+                      id="newPassword" 
+                      type="password"
+                      value={security.newPassword}
+                      onChange={(e) => setSecurity({...security, newPassword: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Conferma password</Label>
+                    <Input 
+                      id="confirmPassword" 
+                      type="password"
+                      value={security.confirmPassword}
+                      onChange={(e) => setSecurity({...security, confirmPassword: e.target.value})}
+                    />
+                  </div>
+                  
+                  <div className="pt-4 flex justify-end">
+                    <Button type="submit">Aggiorna password</Button>
+                  </div>
+                </form>
+                
+                <div className="mt-8 pt-6 border-t">
+                  <h3 className="font-medium mb-4">Altre opzioni</h3>
+                  <Button variant="destructive" onClick={handleLogout}>
+                    Disconnetti
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          {/* Preferenze Tab */}
+          <TabsContent value="preferences">
+            <Card>
+              <CardHeader>
+                <CardTitle>Preferenze</CardTitle>
+                <CardDescription>
+                  Personalizza le tue preferenze di notifica e visualizzazione
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <h3 className="font-medium mb-4">Notifiche</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Notifiche app</p>
+                        <p className="text-sm text-muted-foreground">
+                          Ricevi notifiche per attività importanti
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={showNotifications} 
+                        onCheckedChange={setShowNotifications} 
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Notifiche email</p>
+                        <p className="text-sm text-muted-foreground">
+                          Ricevi email per notifiche importanti
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={emailNotifications} 
+                        onCheckedChange={setEmailNotifications} 
+                      />
+                    </div>
+                  </div>
                 </div>
                 
-                <div 
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${storagePlan === 'pro' ? 'border-primary bg-primary/5' : ''}`}
-                  onClick={() => setStoragePlan('pro')}
-                >
-                  <div className="font-semibold mb-1">Pro</div>
-                  <div className="text-2xl font-bold mb-2">500GB</div>
-                  <div className="text-sm text-muted-foreground mb-4">$4.99/month</div>
-                  <ul className="text-sm space-y-2">
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      500GB storage
-                    </li>
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      File sharing
-                    </li>
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      Advanced features
-                    </li>
-                  </ul>
-                  <Button variant="outline" className="w-full mt-4">Upgrade</Button>
+                <div className="pt-4 border-t">
+                  <h3 className="font-medium mb-4">Lingua e Regione</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="language">Lingua</Label>
+                      <select 
+                        id="language" 
+                        className="w-full border border-input bg-background px-3 py-2 text-base rounded-md"
+                      >
+                        <option value="it">Italiano</option>
+                        <option value="en">English</option>
+                        <option value="fr">Français</option>
+                        <option value="de">Deutsch</option>
+                        <option value="es">Español</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
                 
-                <div 
-                  className={`border rounded-lg p-4 cursor-pointer transition-colors ${storagePlan === 'family' ? 'border-primary bg-primary/5' : ''}`}
-                  onClick={() => setStoragePlan('family')}
-                >
-                  <div className="font-semibold mb-1">Family</div>
-                  <div className="text-2xl font-bold mb-2">2TB</div>
-                  <div className="text-sm text-muted-foreground mb-4">$9.99/month</div>
-                  <ul className="text-sm space-y-2">
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      2TB storage
-                    </li>
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      File sharing
-                    </li>
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      Advanced features
-                    </li>
-                    <li className="flex items-center">
-                      <svg className="mr-2 text-family-green" width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M11.4669 3.72684C11.7558 3.91574 11.8271 4.30308 11.6382 4.59198L7.63821 11.092C7.44932 11.3809 7.06197 11.4522 6.77307 11.2633C6.48417 11.0744 6.41289 10.687 6.60178 10.3981L10.6018 3.89806C10.7907 3.60916 11.178 3.53789 11.4669 3.72684Z" fill="currentColor"></path>
-                        <path d="M11.4999 3.91675C11.4999 3.68533 11.2771 3.49999 10.9999 3.49999C10.7227 3.49999 10.4999 3.68533 10.4999 3.91675L10.4999 7.08341C10.4999 7.31483 10.7227 7.50016 10.9999 7.50016C11.2771 7.50016 11.4999 7.31483 11.4999 7.08341L11.4999 3.91675Z" fill="currentColor"></path>
-                        <path d="M3.99994 7.08341C3.99994 7.31483 4.22288 7.50016 4.50004 7.50016C4.7772 7.50016 5.00014 7.31483 5.00014 7.08341L5.00014 3.91675C5.00014 3.68533 4.7772 3.49999 4.50004 3.49999C4.22288 3.49999 3.99994 3.68533 3.99994 3.91675L3.99994 7.08341Z" fill="currentColor"></path>
-                        <path d="M4.99994 6.00032C4.99994 5.76891 4.77699 5.58357 4.49983 5.58357C4.22268 5.58357 3.99973 5.76891 3.99973 6.00032L3.99973 10.0003C3.99973 10.2317 4.22268 10.4171 4.49983 10.4171C4.77699 10.4171 4.99994 10.2317 4.99994 10.0003L4.99994 6.00032Z" fill="currentColor"></path>
-                      </svg>
-                      Family sharing (6 users)
-                    </li>
-                  </ul>
-                  <Button variant="outline" className="w-full mt-4">Upgrade</Button>
+                <div className="pt-4 flex justify-end">
+                  <Button onClick={() => toast({ title: 'Preferenze salvate' })}>
+                    Salva preferenze
+                  </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

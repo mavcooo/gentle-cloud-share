@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,30 +7,77 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { Logo } from '@/components/logo';
+import { useAuth } from '@/contexts/AuthContext';
+import { EyeIcon, EyeOffIcon } from 'lucide-react';
 
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signUp, user } = useAuth();
 
-  const handleRegister = (e: React.FormEvent) => {
+  // Reindirizza se l'utente è già autenticato
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard');
+    }
+  }, [user, navigate]);
+
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulating register API call
-    setTimeout(() => {
-      setIsLoading(false);
-      
+    // Validazione client-side
+    if (!name || !email || !password || !confirmPassword) {
       toast({
-        title: 'Registration successful',
-        description: 'Your FamilyCloud account has been created!',
+        title: "Errore di compilazione",
+        description: "Compila tutti i campi.",
+        variant: "destructive",
       });
+      setIsLoading(false);
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      toast({
+        title: "Le password non corrispondono",
+        description: "Verifica che le password inserite siano identiche.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    if (password.length < 8) {
+      toast({
+        title: "Password troppo corta",
+        description: "La password deve contenere almeno 8 caratteri.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+    
+    try {
+      const { error } = await signUp(email, password, name);
+      if (error) throw error;
       
-      navigate('/dashboard');
-    }, 1500);
+      // La redirezione viene gestita da AuthContext se la registrazione è immediata,
+      // altrimenti, mostriamo un messaggio di conferma
+      setIsLoading(false);
+    } catch (error) {
+      console.error(error);
+      setIsLoading(false);
+    }
+  };
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -42,18 +89,18 @@ const Register = () => {
         
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl text-center">Create an Account</CardTitle>
+            <CardTitle className="text-2xl text-center">Crea un Account</CardTitle>
             <CardDescription className="text-center">
-              Join FamilyCloud to store and share your files securely
+              Unisciti a FamilyCloud per archiviare e condividere i tuoi file in modo sicuro
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleRegister}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="name">Nome completo</Label>
                 <Input 
                   id="name" 
-                  placeholder="John Smith"
+                  placeholder="Mario Rossi"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
@@ -64,7 +111,7 @@ const Register = () => {
                 <Input 
                   id="email" 
                   type="email" 
-                  placeholder="you@example.com"
+                  placeholder="tu@esempio.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -72,16 +119,37 @@ const Register = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
+                <div className="relative">
+                  <Input 
+                    id="password" 
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                  <Button 
+                    type="button"
+                    variant="ghost" 
+                    size="icon"
+                    className="absolute right-0 top-0 h-full px-3"
+                    onClick={toggleShowPassword}
+                  >
+                    {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  La password deve contenere almeno 8 caratteri
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">Conferma Password</Label>
                 <Input 
-                  id="password" 
+                  id="confirmPassword" 
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">
-                  Must be at least 8 characters long
-                </p>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
@@ -90,12 +158,12 @@ const Register = () => {
                 className="w-full text-base py-6"
                 disabled={isLoading}
               >
-                {isLoading ? 'Creating Account...' : 'Create Account'}
+                {isLoading ? 'Creazione account...' : 'Crea Account'}
               </Button>
               <p className="text-center text-sm">
-                Already have an account?{' '}
+                Hai già un account?{' '}
                 <Link to="/login" className="text-primary hover:underline">
-                  Sign in
+                  Accedi
                 </Link>
               </p>
             </CardFooter>
