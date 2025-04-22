@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Logo } from '@/components/logo';
 import { useAuth } from '@/contexts/AuthContext';
 import { EyeIcon, EyeOffIcon } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 const Register = () => {
   const [name, setName] = useState('');
@@ -17,9 +18,24 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isMockEnvironment, setIsMockEnvironment] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { signUp, user } = useAuth();
+
+  // Controlla se siamo in ambiente mock
+  useEffect(() => {
+    const checkEnvironment = async () => {
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      
+      if (!supabaseUrl || !supabaseKey || supabaseUrl === 'https://mock.supabase.co') {
+        setIsMockEnvironment(true);
+      }
+    };
+    
+    checkEnvironment();
+  }, []);
 
   // Reindirizza se l'utente è già autenticato
   useEffect(() => {
@@ -62,6 +78,17 @@ const Register = () => {
       setIsLoading(false);
       return;
     }
+
+    // Se siamo in ambiente mock, mostra un messaggio specifico
+    if (isMockEnvironment) {
+      toast({
+        title: "Ambiente di sviluppo rilevato",
+        description: "La registrazione non funzionerà finché non colleghi un progetto Supabase reale.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
     
     try {
       const { error } = await signUp(email, password, name);
@@ -86,6 +113,19 @@ const Register = () => {
         <div className="flex justify-center mb-8">
           <Logo size="lg" />
         </div>
+        
+        {isMockEnvironment && (
+          <div className="mb-4 p-4 bg-amber-100 border border-amber-300 rounded-md text-amber-800">
+            <h3 className="font-bold mb-2">Ambiente di sviluppo</h3>
+            <p className="text-sm">
+              Questa applicazione è configurata in modalità sviluppo senza una connessione Supabase reale.
+              La registrazione e l'accesso non funzioneranno finché non colleghi un progetto Supabase.
+            </p>
+            <p className="text-sm mt-2">
+              Clicca sul pulsante Supabase nell'interfaccia di Lovable per collegare un progetto.
+            </p>
+          </div>
+        )}
         
         <Card>
           <CardHeader>
@@ -156,7 +196,7 @@ const Register = () => {
               <Button 
                 type="submit" 
                 className="w-full text-base py-6"
-                disabled={isLoading}
+                disabled={isLoading || isMockEnvironment}
               >
                 {isLoading ? 'Creazione account...' : 'Crea Account'}
               </Button>
