@@ -18,23 +18,31 @@ const Register = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [isMockEnvironment, setIsMockEnvironment] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
   const { toast } = useToast();
   const navigate = useNavigate();
   const { signUp, user } = useAuth();
 
-  // Controlla se siamo in ambiente mock
+  // Verifica la connessione a Supabase
   useEffect(() => {
-    const checkEnvironment = async () => {
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-      
-      if (!supabaseUrl || !supabaseKey || supabaseUrl === 'https://mock.supabase.co') {
-        setIsMockEnvironment(true);
+    const checkConnection = async () => {
+      try {
+        setConnectionStatus('connecting');
+        // Esegui una query semplice per verificare la connessione
+        const { error } = await supabase.from('user_roles').select('count').limit(1);
+        if (error && error.code !== 'PGRST116') { // PGRST116 è "relation does not exist" che è ok se la tabella non esiste ancora
+          console.error('Errore di connessione a Supabase:', error);
+          setConnectionStatus('error');
+        } else {
+          setConnectionStatus('connected');
+        }
+      } catch (error) {
+        console.error('Errore durante il test della connessione:', error);
+        setConnectionStatus('error');
       }
     };
     
-    checkEnvironment();
+    checkConnection();
   }, []);
 
   // Reindirizza se l'utente è già autenticato
@@ -78,17 +86,6 @@ const Register = () => {
       setIsLoading(false);
       return;
     }
-
-    // Se siamo in ambiente mock, mostra un messaggio specifico
-    if (isMockEnvironment) {
-      toast({
-        title: "Ambiente di sviluppo rilevato",
-        description: "La registrazione non funzionerà finché non colleghi un progetto Supabase reale.",
-        variant: "destructive",
-      });
-      setIsLoading(false);
-      return;
-    }
     
     try {
       const { error } = await signUp(email, password, name);
@@ -98,7 +95,7 @@ const Register = () => {
       // altrimenti, mostriamo un messaggio di conferma
       setIsLoading(false);
     } catch (error) {
-      console.error(error);
+      console.error('Errore durante la registrazione:', error);
       setIsLoading(false);
     }
   };
@@ -114,15 +111,21 @@ const Register = () => {
           <Logo size="lg" />
         </div>
         
-        {isMockEnvironment && (
+        {connectionStatus === 'error' && (
           <div className="mb-4 p-4 bg-amber-100 border border-amber-300 rounded-md text-amber-800">
-            <h3 className="font-bold mb-2">Ambiente di sviluppo</h3>
+            <h3 className="font-bold mb-2">Errore di connessione a Supabase</h3>
             <p className="text-sm">
-              Questa applicazione è configurata in modalità sviluppo senza una connessione Supabase reale.
-              La registrazione e l'accesso non funzioneranno finché non colleghi un progetto Supabase.
+              Non è possibile connettersi a Supabase. Verifica la configurazione del progetto 
+              e assicurati che il servizio Supabase sia attivo.
             </p>
-            <p className="text-sm mt-2">
-              Clicca sul pulsante Supabase nell'interfaccia di Lovable per collegare un progetto.
+          </div>
+        )}
+        
+        {connectionStatus === 'connecting' && (
+          <div className="mb-4 p-4 bg-blue-100 border border-blue-300 rounded-md text-blue-800">
+            <h3 className="font-bold mb-2">Connessione in corso...</h3>
+            <p className="text-sm">
+              Stiamo verificando la connessione a Supabase. Attendi un momento.
             </p>
           </div>
         )}
@@ -144,6 +147,7 @@ const Register = () => {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
+                  disabled={isLoading || connectionStatus !== 'connected'}
                 />
               </div>
               <div className="space-y-2">
@@ -155,6 +159,7 @@ const Register = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  disabled={isLoading || connectionStatus !== 'connected'}
                 />
               </div>
               <div className="space-y-2">
@@ -166,6 +171,7 @@ const Register = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
+                    disabled={isLoading || connectionStatus !== 'connected'}
                   />
                   <Button 
                     type="button"
@@ -173,6 +179,7 @@ const Register = () => {
                     size="icon"
                     className="absolute right-0 top-0 h-full px-3"
                     onClick={toggleShowPassword}
+                    disabled={isLoading || connectionStatus !== 'connected'}
                   >
                     {showPassword ? <EyeOffIcon size={16} /> : <EyeIcon size={16} />}
                   </Button>
@@ -189,6 +196,7 @@ const Register = () => {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
+                  disabled={isLoading || connectionStatus !== 'connected'}
                 />
               </div>
             </CardContent>
@@ -196,7 +204,7 @@ const Register = () => {
               <Button 
                 type="submit" 
                 className="w-full text-base py-6"
-                disabled={isLoading || isMockEnvironment}
+                disabled={isLoading || connectionStatus !== 'connected'}
               >
                 {isLoading ? 'Creazione account...' : 'Crea Account'}
               </Button>

@@ -2,6 +2,7 @@
 import { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/lib/supabase';
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -10,8 +11,11 @@ const Index = () => {
     console.log('Redirecting to appropriate page...');
   }, []);
 
-  // Mostra un messaggio informativo se siamo in modalità sviluppo
-  if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+  // Verifica se la connessione a Supabase è configurata
+  const isSupabaseConfigured = !!supabase;
+
+  // Se Supabase non è configurato correttamente, mostra un messaggio
+  if (!isSupabaseConfigured) {
     return (
       <div className="flex flex-col items-center justify-center h-screen p-4">
         <div className="max-w-md text-center">

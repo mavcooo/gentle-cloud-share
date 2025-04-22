@@ -24,15 +24,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Set initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Set up auth state listener FIRST to avoid race conditions
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
@@ -45,13 +45,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const checkAdminStatus = async () => {
       if (user) {
-        const { data } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .single();
-        
-        setIsAdmin(data?.role === 'admin');
+        try {
+          const { data } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .maybeSingle();
+          
+          setIsAdmin(data?.role === 'admin');
+        } catch (error) {
+          console.error('Errore nel controllo del ruolo admin:', error);
+          setIsAdmin(false);
+        }
       } else {
         setIsAdmin(false);
       }
@@ -95,6 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       return { error: null };
     } catch (error) {
+      console.error('Errore durante la registrazione:', error);
       toast({
         title: "Errore di registrazione",
         description: (error as Error).message,

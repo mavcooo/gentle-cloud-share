@@ -1,13 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
+import { supabase as configuredClient } from '@/integrations/supabase/client';
 
-// Se l'app è in esecuzione in produzione, utilizza le variabili d'ambiente
-// Altrimenti, per lo sviluppo, usa valori di fallback (mock)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://mock.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'mock-key-for-development';
-
-// Crea il client Supabase
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Utilizziamo direttamente il client configurato dal file generato automaticamente
+export const supabase = configuredClient;
 
 // Helper per verificare il ruolo dell'utente
 export const isAdmin = async () => {
@@ -32,7 +28,7 @@ export const getUserStorageUsed = async () => {
     .from('user_storage')
     .select('storage_used')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
   
   return data?.storage_used || 0;
 };
@@ -46,7 +42,7 @@ export const hasEnoughStorage = async (fileSize: number) => {
     .from('user_storage')
     .select('storage_used, storage_limit')
     .eq('user_id', user.id)
-    .single();
+    .maybeSingle();
   
   if (!data) return false;
   
