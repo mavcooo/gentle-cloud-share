@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,7 +19,8 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { FilePreview } from './file-preview';
-import { useFileSystem, FileItem, formatFileSize } from '@/hooks/use-file-system';
+import { useFileSystem, formatFileSize } from '@/hooks/use-file-system';
+import { FileItem } from '@/types/files';
 import { Folder, FileIcon, Download, Share, Pencil, Trash, Grid, List, Search } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 

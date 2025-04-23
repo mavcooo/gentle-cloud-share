@@ -1,7 +1,6 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileItem, formatFileSize } from '@/hooks/use-file-system';
+import { FileItem } from '@/types/files';
 import { Download, Share, X } from 'lucide-react';
 
 interface FilePreviewProps {
@@ -85,4 +84,14 @@ export const FilePreview: React.FC<FilePreviewProps> = ({ file, onClose }) => {
       </div>
     </div>
   );
+};
+
+const formatFileSize = (bytes?: number) => {
+  if (bytes === undefined || bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };

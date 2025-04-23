@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -6,6 +5,16 @@ import { useToast } from '@/components/ui/use-toast';
 import { useFileStorage } from './use-file-storage';
 import { useFolders } from './use-folders';
 import type { FileItem } from '@/types/files';
+
+export const formatFileSize = (bytes?: number) => {
+  if (bytes === undefined || bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+};
 
 export const useFileSystem = (path = '') => {
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -150,14 +159,4 @@ export const useFileSystem = (path = '') => {
     },
     refreshFiles: loadFiles,
   };
-};
-
-export const formatFileSize = (bytes?: number) => {
-  if (bytes === undefined || bytes === 0) return '0 Bytes';
-
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
