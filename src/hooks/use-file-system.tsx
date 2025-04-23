@@ -108,6 +108,7 @@ export const useFileSystem = (path = '') => {
   useEffect(() => {
     if (user) {
       loadFiles();
+      fileStorage.getStorageInfo();
     }
   }, [user, path]);
 
@@ -124,7 +125,10 @@ export const useFileSystem = (path = '') => {
         const result = await fileStorage.uploadFile(file, path);
         if (!result) success = false;
       }
-      if (success) await loadFiles();
+      if (success) {
+        await loadFiles();
+        await fileStorage.getStorageInfo();
+      }
       return success;
     },
     deleteFile: async (file: FileItem) => {
@@ -134,23 +138,27 @@ export const useFileSystem = (path = '') => {
       } else if (file.path) {
         success = await fileStorage.deleteFile(file.path, file.size);
       }
-      if (success) await loadFiles();
+      if (success) {
+        await loadFiles();
+        await fileStorage.getStorageInfo();
+      }
       return success;
     },
     renameFile: async (file: FileItem, newName: string) => {
       let success = false;
       if (file.type === 'folder') {
         success = await folderManager.renameFolder(file.id, newName);
-      } else {
-        toast({
-          title: 'Non supportato',
-          description: 'La rinomina dei file non è ancora supportata.',
-          variant: 'destructive'
-        });
+      } else if (file.path) {
+        success = await fileStorage.renameFile(file.path, newName);
       }
-      if (success) await loadFiles();
+      if (success) {
+        await loadFiles();
+      }
       return success;
     },
-    refreshFiles: loadFiles,
+    refreshFiles: async () => {
+      await loadFiles();
+      await fileStorage.getStorageInfo();
+    }
   };
 };

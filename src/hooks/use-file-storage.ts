@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,12 +104,74 @@ export const useFileStorage = () => {
     }
   };
 
+  const renameFile = async (oldPath: string, newName: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      setLoading(true);
+      const oldPathParts = oldPath.split('/');
+      const newPath = [...oldPathParts.slice(0, -1), newName].join('/');
+
+      const { error: moveError } = await supabase
+        .storage
+        .from('user_files')
+        .move(`${user.id}/${oldPath}`, `${user.id}/${newPath}`);
+
+      if (moveError) throw moveError;
+
+      toast({
+        title: 'Successo',
+        description: 'File rinominato con successo.',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('Error renaming file:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile rinominare il file.',
+        variant: 'destructive'
+      });
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStorageInfo = async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_storage')
+        .select('storage_used, storage_limit')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setStorageUsed(data.storage_used);
+        setStorageLimit(data.storage_limit);
+      }
+    } catch (error) {
+      console.error('Error fetching storage info:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile recuperare le informazioni sullo storage.',
+        variant: 'destructive'
+      });
+    }
+  };
+
   return {
     loading,
     storageUsed,
     storageLimit,
     uploadFile,
     deleteFile,
-    checkStorageLimit
+    renameFile,
+    checkStorageLimit,
+    getStorageInfo
   };
 };
