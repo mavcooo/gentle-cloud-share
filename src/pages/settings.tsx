@@ -1,77 +1,19 @@
+
 import React, { useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sidebar } from '@/components/sidebar';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/components/ui/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
-import { Eye, EyeOff, User } from 'lucide-react';
-import { StorageInfo } from '@/components/storage-info';
+import { ProfileTab } from '@/components/settings/profile-tab';
+import { SecurityTab } from '@/components/settings/security-tab';
+import { PreferencesTab } from '@/components/settings/preferences-tab';
 
 const SettingsPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const isMobile = useIsMobile();
-  const { toast } = useToast();
-  const { user, signOut } = useAuth();
-  
-  const [profile, setProfile] = useState({
-    name: user?.user_metadata?.name || '',
-    email: user?.email || '',
-  });
-  
-  const [security, setSecurity] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  
-  const [showPassword, setShowPassword] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(true);
-  const [emailNotifications, setEmailNotifications] = useState(true);
   
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
-  };
-  
-  const handleProfileUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    toast({
-      title: 'Profilo aggiornato',
-      description: 'Le tue informazioni sono state aggiornate.',
-    });
-  };
-  
-  const handlePasswordUpdate = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (security.newPassword !== security.confirmPassword) {
-      toast({
-        title: 'Errore',
-        description: 'Le password non corrispondono.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    toast({
-      title: 'Password aggiornata',
-      description: 'La tua password è stata modificata con successo.',
-    });
-    
-    setSecurity({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: '',
-    });
-  };
-  
-  const handleLogout = async () => {
-    await signOut();
   };
   
   return (
@@ -105,193 +47,15 @@ const SettingsPage = () => {
           </TabsList>
           
           <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informazioni Profilo</CardTitle>
-                <CardDescription>
-                  Aggiorna le tue informazioni personali
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleProfileUpdate} className="space-y-4">
-                  <div className="flex items-center justify-center mb-6">
-                    <div className="relative">
-                      <div className="w-24 h-24 rounded-full bg-family-lightBlue flex items-center justify-center">
-                        <User size={40} className="text-primary" />
-                      </div>
-                      <Button size="sm" className="absolute bottom-0 right-0 rounded-full" variant="secondary">
-                        Cambia
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Nome completo</Label>
-                    <Input 
-                      id="name" 
-                      value={profile.name}
-                      onChange={(e) => setProfile({...profile, name: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input 
-                      id="email" 
-                      type="email"
-                      value={profile.email}
-                      onChange={(e) => setProfile({...profile, email: e.target.value})}
-                      disabled
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      L'email non può essere modificata
-                    </p>
-                  </div>
-                  
-                  <div className="pt-4 flex justify-end">
-                    <Button type="submit">Salva modifiche</Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
+            <ProfileTab />
           </TabsContent>
           
           <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Sicurezza</CardTitle>
-                <CardDescription>
-                  Gestisci la tua password e le impostazioni di sicurezza
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handlePasswordUpdate} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Password attuale</Label>
-                    <div className="relative">
-                      <Input 
-                        id="currentPassword" 
-                        type={showPassword ? "text" : "password"}
-                        value={security.currentPassword}
-                        onChange={(e) => setSecurity({...security, currentPassword: e.target.value})}
-                      />
-                      <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="icon"
-                        className="absolute right-0 top-0 h-full px-3"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">Nuova password</Label>
-                    <Input 
-                      id="newPassword" 
-                      type="password"
-                      value={security.newPassword}
-                      onChange={(e) => setSecurity({...security, newPassword: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Conferma password</Label>
-                    <Input 
-                      id="confirmPassword" 
-                      type="password"
-                      value={security.confirmPassword}
-                      onChange={(e) => setSecurity({...security, confirmPassword: e.target.value})}
-                    />
-                  </div>
-                  
-                  <div className="pt-4 flex justify-end">
-                    <Button type="submit">Aggiorna password</Button>
-                  </div>
-                </form>
-                
-                <div className="mt-8 pt-6 border-t">
-                  <h3 className="font-medium mb-4">Altre opzioni</h3>
-                  <Button variant="destructive" onClick={handleLogout}>
-                    Disconnetti
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <SecurityTab />
           </TabsContent>
           
           <TabsContent value="preferences">
-            <div className="space-y-6">
-              <StorageInfo />
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Preferenze</CardTitle>
-                  <CardDescription>
-                    Personalizza le tue preferenze di notifica e visualizzazione
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <h3 className="font-medium mb-4">Notifiche</h3>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Notifiche app</p>
-                          <p className="text-sm text-muted-foreground">
-                            Ricevi notifiche per attività importanti
-                          </p>
-                        </div>
-                        <Switch 
-                          checked={showNotifications} 
-                          onCheckedChange={setShowNotifications} 
-                        />
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium">Notifiche email</p>
-                          <p className="text-sm text-muted-foreground">
-                            Ricevi email per notifiche importanti
-                          </p>
-                        </div>
-                        <Switch 
-                          checked={emailNotifications} 
-                          onCheckedChange={setEmailNotifications} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4 border-t">
-                    <h3 className="font-medium mb-4">Lingua e Regione</h3>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="language">Lingua</Label>
-                        <select 
-                          id="language" 
-                          className="w-full border border-input bg-background px-3 py-2 text-base rounded-md"
-                        >
-                          <option value="it">Italiano</option>
-                          <option value="en">English</option>
-                          <option value="fr">Français</option>
-                          <option value="de">Deutsch</option>
-                          <option value="es">Español</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="pt-4 flex justify-end">
-                    <Button onClick={() => toast({ title: 'Preferenze salvate' })}>
-                      Salva preferenze
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <PreferencesTab />
           </TabsContent>
         </Tabs>
       </main>
