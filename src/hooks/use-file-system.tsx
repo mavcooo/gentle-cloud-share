@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -30,7 +31,6 @@ export const useFileSystem = (path = '') => {
 
     setLoading(true);
     try {
-      // Carica cartelle
       const { data: folderData, error: folderError } = await supabase
         .from('folders')
         .select('*')
@@ -39,7 +39,6 @@ export const useFileSystem = (path = '') => {
 
       if (folderError) throw folderError;
 
-      // Carica file
       const basePath = user ? `${user.id}/${path}` : '';
       const { data: fileData, error: fileError } = await supabase
         .storage
@@ -48,7 +47,6 @@ export const useFileSystem = (path = '') => {
 
       if (fileError) throw fileError;
 
-      // Mappa le cartelle
       const mappedFolders = (folderData || []).map((folder): FileItem => ({
         id: folder.id,
         name: folder.name,
@@ -57,7 +55,6 @@ export const useFileSystem = (path = '') => {
         path: folder.path
       }));
 
-      // Mappa i file
       const mappedFiles = (fileData || [])
         .filter((file) => !file.name.endsWith('/'))
         .map((file): FileItem => ({
@@ -84,7 +81,6 @@ export const useFileSystem = (path = '') => {
     }
   };
 
-  // Helper per ottenere l'URL di un file
   const getFileUrl = (basePath: string, fileName: string) => {
     return supabase
       .storage
@@ -94,7 +90,6 @@ export const useFileSystem = (path = '') => {
       .publicUrl;
   };
 
-  // Helper per determinare il tipo di file
   const getFileType = (fileName: string): FileItem['type'] => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     if (!ext) return 'other';
@@ -147,7 +142,6 @@ export const useFileSystem = (path = '') => {
       if (file.type === 'folder') {
         success = await folderManager.renameFolder(file.id, newName);
       } else {
-        // Implement file renaming if needed
         toast({
           title: 'Non supportato',
           description: 'La rinomina dei file non è ancora supportata.',

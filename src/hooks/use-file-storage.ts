@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import type { FileItem } from '@/types/files';
 
 export const useFileStorage = () => {
   const [loading, setLoading] = useState(false);
@@ -54,7 +53,6 @@ export const useFileStorage = () => {
 
       if (uploadError) throw uploadError;
 
-      // Update storage used
       await supabase.rpc('increment_storage_used', {
         user_id_param: user.id,
         bytes_used: file.size

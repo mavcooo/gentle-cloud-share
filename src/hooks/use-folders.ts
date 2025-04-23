@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
-import type { FileItem } from '@/types/files';
 
 export const useFolders = (currentPath: string = '') => {
   const [loading, setLoading] = useState(false);
