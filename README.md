@@ -1,73 +1,145 @@
-# Welcome to your Lovable project
+# ☁️ gentle-cloud-share
 
-## Project info
+**gentle-cloud-share** è un'app web self-hosted per la gestione e condivisione sicura di file, sviluppata in Node.js + Express, con interfaccia responsive e database MongoDB.  
+L'obiettivo è creare una piattaforma privata, semplice da usare, e accessibile da qualsiasi dispositivo, alternativa a servizi cloud come Google Drive o Dropbox.
 
-**URL**: https://lovable.dev/projects/0c013850-97c3-4967-b3c1-2d2dc3d503a9
+---
 
-## How can I edit this code?
+## 🚀 Funzionalità
 
-There are several ways of editing your application.
+### ✅ Implementate
 
-**Use Lovable**
+- 🔼 Upload file dal browser (con Multer)
+- 🧾 Interfaccia web con EJS + Bootstrap
+- 📂 Navigazione dei file tramite filesystem locale
+- 📥 Download ed eliminazione file
+- 💾 Salvataggio diretto su disco (`/uploads`)
+- ⚙️ Configurazione base in `.env`
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0c013850-97c3-4967-b3c1-2d2dc3d503a9) and start prompting.
+### 🛠️ In fase di sviluppo
 
-Changes made via Lovable will be committed automatically to this repo.
+#### 🔐 Autenticazione e Utenti
+- [ ] Registrazione, login, logout
+- [ ] Sessioni persistenti con `express-session` + MongoDB
+- [ ] Ruoli: `admin`, `utente`
+- [ ] Recupero password via email (Nodemailer)
 
-**Use your preferred IDE**
+#### 📁 File e Cartelle
+- [ ] Organizzazione in cartelle
+- [ ] Condivisione tramite link interno (con permessi)
+- [ ] Cronologia attività: upload, rename, cancellazioni
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+#### 🖼️ Interfaccia Utente
+- [ ] Anteprima immagini/PDF
+- [ ] Dashboard con spazio usato, attività recenti
+- [ ] Tema scuro e responsive design mobile
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+#### 🔒 Sicurezza e Backup
+- [ ] Crittografia file lato server (AES-256)
+- [ ] Protezione brute-force login (rate-limiting)
+- [ ] Log accessi utente
+- [ ] Backup automatico con `rsync` o script cron
 
-Follow these steps:
+#### 📱 Mobile & PWA
+- [ ] App installabile (Progressive Web App)
+- [ ] Notifiche push per nuovi file condivisi
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+#### 📈 Futuro e Scalabilità
+- [ ] Streaming video/audio (FFmpeg)
+- [ ] Integrazione con Google Drive, Dropbox
+- [ ] Versione premium (abbonamento, donazioni)
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+---
 
-# Step 3: Install the necessary dependencies.
-npm i
+## 📦 Installazione
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+> Prerequisiti:
+> - Node.js >= 16.x
+> - MongoDB in locale o Atlas
+> - `git`, `npm`
 
-**Edit a file directly in GitHub**
+### 1. Clona il repository
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+git clone https://github.com/mavcooo/gentle-cloud-share.git
+cd gentle-cloud-share
 
-**Use GitHub Codespaces**
+2. Installa le dipendenze
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+npm install
 
-## What technologies are used for this project?
+3. Crea un file .env
 
-This project is built with:
+PORT=3000
+MONGO_URI=mongodb://localhost:27017/gentlecloud
+SESSION_SECRET=qualcosa-di-sicuro
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+4. Avvia il server
 
-## How can I deploy this project?
+npm start
 
-Simply open [Lovable](https://lovable.dev/projects/0c013850-97c3-4967-b3c1-2d2dc3d503a9) and click on Share -> Publish.
+Visita http://localhost:3000 nel browser.
+🗂️ Struttura del Progetto
 
-## Can I connect a custom domain to my Lovable project?
+gentle-cloud-share/
+├── public/           # File statici (CSS, JS)
+├── views/            # Template EJS
+├── uploads/          # File caricati dagli utenti
+├── routes/           # Rotte Express
+│   ├── index.js
+│   ├── auth.js       # (in sviluppo)
+│   └── file.js       # (in sviluppo)
+├── models/           # Schemi Mongoose
+├── middleware/       # Middleware auth e ruoli
+├── .env              # Variabili ambiente
+├── app.js            # Entry point
+└── README.md
 
-Yes, you can!
+🧰 Stack Tecnologico
+Tecnologia	Uso
+Node.js + Express	Backend e gestione rotte
+EJS + Bootstrap	Frontend e UI
+MongoDB + Mongoose	Database utenti e sessioni
+Multer	Upload file lato server
+express-session	Gestione login/sessioni
+dotenv	Configurazione ambiente
+🛡️ Sicurezza (pianificata)
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+    Password hashate con bcrypt
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+    Sessioni sicure (cookie HttpOnly, SameSite)
+
+    Rate limiting con express-rate-limit
+
+    Log accessi e modifiche file
+
+    Crittografia file (AES-256 con chiave per utente)
+
+    Token reset password con crypto
+
+🔧 Script disponibili
+Comando	Descrizione
+npm start	Avvia l'app su localhost:3000
+npm run dev	Avvia con nodemon (se installato)
+🤝 Contribuisci
+
+Contributi, segnalazioni bug e idee sono benvenuti!
+Apri una pull request o segnala un problema nella sezione Issues.
+📜 Licenza
+
+Distribuito sotto licenza MIT. Vedi LICENSE per maggiori dettagli.
+🗺️ Roadmap
+Fase	Stato
+Upload file base	✅
+Autenticazione	🟡 in corso
+Gestione ruoli	🔲
+UI responsive	🟡
+Crittografia	🔲
+PWA + notifiche	🔲
+Dashboard	🔲
+Condivisione file	🔲
+👨‍💻 Autore
+
+Marco (mavcooo)
+Studente di informatica con passione per lo sviluppo full-stack e il software open-source.
+📫 GitHub
